@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Agentic AI – Aftersales Control Center</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-main: #f4f5f7;
+      --bg-card: #ffffff;
+      --accent-red: #c01025;
+      --accent-red-soft: #ffe5e8;
+      --accent-dark: #17171b;
+      --border-soft: #e5e5ea;
+      --text-main: #222222;
+      --text-muted: #6b6b7a;
+      --shadow-soft: 0 8px 20px rgba(0,0,0,0.05);
+      --radius-card: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      overflow-x: hidden;       /* no left-right scroll */
+    }
+
+    /* ===== LAYOUT ===== */
+    .app-shell {
+      display: grid;
+      grid-template-columns: 240px 1fr;   /* slightly smaller sidebar */
+      min-height: 100vh;
+      max-width: 100vw;
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      background: linear-gradient(180deg, #1a0507, #3b080e);
+      color: #f8f8f8;
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      background: radial-gradient(circle at 20% 20%, #ff6666, #c01025);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 17px;
+      box-shadow: 0 9px 20px rgba(0,0,0,0.4);
+    }
+
+    .brand-text-title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-text-sub {
+      font-size: 10px;
+      opacity: 0.7;
+    }
+
+    .sidebar-section-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      opacity: 0.65;
+      margin-bottom: 4px;
+      margin-top: 4px;
+    }
+
+    .sidebar-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+    }
+
+    .sidebar-item {
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: default;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent;
+      color: #f1f1f3;
+    }
+
+    .sidebar-item.active {
+      background: rgba(255,255,255,0.08);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+    }
+
+    .tag-pill {
+      font-size: 9px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.35);
+      opacity: 0.9;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      font-size: 10px;
+      opacity: 0.7;
+      border-top: 1px dashed rgba(255,255,255,0.2);
+      padding-top: 8px;
+    }
+
+    /* ===== MAIN AREA ===== */
+    .main-area {
+      display: flex;
+      flex-direction: column;
+      padding: 14px 18px;
+      gap: 14px;
+      max-width: calc(100vw - 240px);
+      overflow-y: auto;       /* clean vertical scroll */
+    }
+
+    /* TOP BAR */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .top-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .top-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .top-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+    }
+
+    .label-pill {
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      border: 1px solid var(--border-soft);
+      background: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .label-pill.red {
+      border-color: #ffd5da;
+      background: #fff6f7;
+      color: var(--accent-red);
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    /* SUMMARY CARDS */
+    .summary-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px;
+    }
+
+    .summary-card {
+      background: var(--bg-card);
+      border-radius: 11px;
+      padding: 9px 11px;
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .summary-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .summary-value {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+
+    .summary-extra {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* GRID CONTENT */
+    .grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1.1fr;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .grid-column {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-card);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-soft);
+      padding: 11px 12px 10px 12px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .card-subtext {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .card-badge {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid #ffe1e4;
+      background: #fff6f7;
+      color: var(--accent-red);
+    }
+
+    /* TABLE */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+    }
+
+    th {
+      background: #faf3f4;
+      color: var(--accent-red);
+      padding: 6px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 1px solid #f1d9dd;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 5px 6px;
+      border-bottom: 1px solid #f2f2f4;
+      vertical-align: middle;
+    }
+
+    tr:hover {
+      background: #fff6f7;
+      cursor: pointer;
+    }
+
+    /* BADGES, BUTTONS */
+    .badge {
+      padding: 2px 7px;
+      font-size: 10px;
+      border-radius: 999px;
+      font-weight: 600;
+      color: white;
+    }
+    .NORMAL { background: #16a34a; }
+    .WARNING { background: #f97316; }
+    .CRITICAL { background: #b91c1c; }
+
+    button {
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 500;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+      white-space: nowrap;
+    }
+
+    button.book {
+      background: var(--accent-red);
+      color: white;
+      box-shadow: 0 3px 14px rgba(192,16,37,0.4);
+    }
+
+    button.book:hover {
+      background: #97101f;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(192,16,37,0.5);
+    }
+
+    /* PILL / CHIPS */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #fff1f2;
+      color: var(--accent-red);
+      margin-right: 3px;
+      margin-bottom: 3px;
+      border: 1px solid #ffd5da;
+    }
+
+    /* DETAIL KEY–VALUES */
+    .kv-section-title {
+      margin-top: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent-red);
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      border-top: 1px dashed #f0ccd1;
+      padding-top: 4px;
+    }
+
+    .kv-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+      padding: 1px 0;
+      font-size: 11px;
+    }
+    .kv-label { color: var(--text-muted); }
+    .kv-value { color: var(--text-main); font-weight: 500; }
+
+    /* LISTS */
+    ul {
+      padding-left: 16px;
+      margin: 4px 0 0 0;
+    }
+    li {
+      margin-bottom: 3px;
+      font-size: 11px;
+      color: var(--text-main);
+    }
+
+    /* PRETTY PRE */
+    pre {
+      background: #fff7f8;
+      border-radius: 8px;
+      padding: 7px 9px;
+      border: 1px solid #ffe1e4;
+      font-size: 11px;
+      max-height: 190px;
+      overflow: auto;
+      margin: 4px 0 0 0;
+    }
+
+    /* SCHEDULE ITEMS */
+    .schedule-item {
+      background: #fffafa;
+      padding: 6px 7px;
+      border-radius: 8px;
+      margin-bottom: 5px;
+      border: 1px solid #ffe1e4;
+      font-size: 11px;
+    }
+
+    .schedule-item b {
+      font-size: 11.5px;
+    }
+
+    /* NOTIFICATIONS / UEBA LISTS */
+    .plain-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 3px 0 0 0;
+      font-size: 11px;
+    }
+
+    .plain-list li {
+      margin-bottom: 4px;
+      padding: 5px 7px;
+      background: #fff7f8;
+      border-radius: 8px;
+      border: 1px solid #ffe1e4;
+    }
+
+    /* CHART */
+    canvas {
+      background: #ffffff;
+      border-radius: 8px;
+      border: 1px solid #f0d7dd;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 960px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        display: none;
+      }
+      .main-area {
+        max-width: 100vw;
+        padding: 10px 10px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">AI</div>
+      <div>
+        <div class="brand-text-title">Agentic Aftersales</div>
+        <div class="brand-text-sub">Predictive Maintenance • OEM View</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-title">Scope</div>
+      <ul class="sidebar-list">
+        <li class="sidebar-item active">
+          <span>Live Fleet Health</span>
+          <span class="tag-pill">Demo</span>
+        </li>
+        <li class="sidebar-item">
+          <span>RCA / CAPA Insights</span>
+        </li>
+        <li class="sidebar-item">
+          <span>Customer Engagement</span>
+        </li>
+        <li class="sidebar-item">
+          <span>UEBA & Security</span>
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="sidebar-section-title">Sensor Domains</div>
+      <ul class="sidebar-list">
+        <li class="sidebar-item"><span>Engine & Powertrain</span></li>
+        <li class="sidebar-item"><span>Brake System</span></li>
+        <li class="sidebar-item"><span>Battery & Electrical</span></li>
+        <li class="sidebar-item"><span>Tire & Wheel</span></li>
+        <li class="sidebar-item"><span>Fuel & Emission</span></li>
+        <li class="sidebar-item"><span>Safety & GPS</span></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-footer">
+      <div>Prototype stack:</div>
+      <div>ESP32 firmware + Agentic AI + Web dashboard</div>
+    </div>
+  </aside>
+
+  <!-- MAIN AREA -->
+  <main class="main-area">
+    <!-- TOP BAR -->
+    <div class="top-bar">
+      <div class="top-left">
+        <div class="top-title">Aftersales Control Center – Live View</div>
+        <div class="top-subtitle">
+          Real-time telematics → AI risk scoring → Autonomous service prioritization
+        </div>
+      </div>
+      <div class="top-right">
+        <div class="label-pill">
+          <span class="dot"></span> Platform Online
+        </div>
+        <div class="label-pill red">
+          Agentic AI Orchestrator
+        </div>
+      </div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="summary-label">Total Vehicles</div>
+        <div class="summary-value"><span id="metric-total">–</span></div>
+        <div class="summary-extra">Connected in this demo region</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Critical Cases</div>
+        <div class="summary-value">
+          <span id="metric-critical">–</span>
+        </div>
+        <div class="summary-extra">Highest-priority breakdown risk</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Warning Cases</div>
+        <div class="summary-value">
+          <span id="metric-warning">–</span>
+        </div>
+        <div class="summary-extra">Ideal for preventive maintenance</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Avg Failure Probability</div>
+        <div class="summary-value">
+          <span id="metric-avg-fp">–</span><span style="font-size:10px;">(0–1)</span>
+        </div>
+        <div class="summary-extra">Aggregated across all vehicles</div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="grid">
+      <!-- LEFT COLUMN -->
+      <div class="grid-column">
+        <!-- Vehicles Overview -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Fleet Overview (Prioritized)</div>
+              <div class="card-subtext">Sorted by service urgency – status, risk & RUL</div>
+            </div>
+            <span class="card-badge">Priority Ranking</span>
+          </div>
+          <table id="vehicles-table">
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>Status</th>
+              <th>Risk</th>
+              <th>RUL (km)</th>
+              <th>Service</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- Engine Temperature Trend -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Engine Temperature Trend</div>
+              <div class="card-subtext">Last 50 samples for selected vehicle</div>
+            </div>
+          </div>
+          <canvas id="tempChart" height="180"></canvas>
+        </div>
+
+        <!-- RCA / CAPA -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">RCA / CAPA Insights (Manufacturing)</div>
+              <div class="card-subtext">Aggregated pattern analysis across the active fleet</div>
+            </div>
+          </div>
+          <pre id="insights-box"></pre>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="grid-column">
+        <!-- Selected Vehicle -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Selected Vehicle – AI Health Summary</div>
+              <div class="card-subtext">Sensor domains, GPS & AI recommendation</div>
+            </div>
+          </div>
+          <div id="selected-pill" style="margin-bottom:4px;"></div>
+          <div id="vehicle-detail" class="card-subtext">Select a vehicle from the fleet table…</div>
+        </div>
+
+        <!-- Alerts -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Active Alerts</div>
+              <div class="card-subtext">Multi-sensor conditions requiring OEM attention</div>
+            </div>
+          </div>
+          <ul id="alerts-list"></ul>
+        </div>
+
+        <!-- Scheduling -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Autonomous Service Scheduling</div>
+              <div class="card-subtext">Slots aligned with risk score, RUL & region</div>
+            </div>
+          </div>
+          <div id="schedule-info" class="card-subtext">
+            Click <b>Service</b> for any vehicle to auto-allocate a slot based on priority.
+          </div>
+          <div id="schedule-list" style="margin-top:5px;"></div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Customer Engagement (AI Notifications)</div>
+              <div class="card-subtext">What the voice bot would tell the driver</div>
+            </div>
+          </div>
+          <ul id="notif-list" class="plain-list"></ul>
+        </div>
+
+        <!-- UEBA -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Security / UEBA Monitor</div>
+              <div class="card-subtext">User & agent behaviour analytics in the platform</div>
+            </div>
+          </div>
+          <ul id="ueba-list" class="plain-list"></ul>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* =========================================================
+   1. Demo Fleet Definition
+   ========================================================= */
+const vehicles = [
+  { id: "TN10AB1234", distance: 24000, gps: { lat: 13.0827, lon: 80.2707 }, baseCity: "Chennai Region" },
+  { id: "KA05XY9999", distance: 56000, gps: { lat: 12.9716, lon: 77.5946 }, baseCity: "Bengaluru Region" },
+  { id: "MH12ZZ4321", distance: 8000,  gps: { lat: 18.5204, lon: 73.8567 }, baseCity: "Pune Region" }
+];
+
+const history   = {};
+let schedules   = [];
+let notifications = [];
+let uebaEvents  = [];
+
+/* =========================================================
+   2. Client-Side Simulation: Vehicle Firmware
+   ========================================================= */
+function simulateVehicleTelemetry(v) {
+  v.gps.lat += randRange(-0.0005, 0.0005);
+  v.gps.lon += randRange(-0.0005, 0.0005);
+
+  const telem = {
+    vehicle_id: v.id,
+    // Engine & Powertrain
+    engine_temp: randRange(80, 120),
+    coolant_temp: randRange(75, 110),
+    vibration_level: randRange(0.2, 1.8),
+    distance_travelled: v.distance += randRange(10, 60),
+    // Battery & Electrical
+    battery_voltage: randRange(11.4, 13.5),
+    battery_current: randRange(-20, 60),
+    soc: randRange(40, 100),
+    // Brake System
+    brake_pad_level: randRange(30, 100),
+    brake_fluid_pressure: randRange(70, 120),
+    brake_temp: randRange(40, 180),
+    // Tire & Wheel
+    tire_pressure: randRange(26, 38),
+    tire_temp: randRange(25, 70),
+    wheel_vibration: randRange(0.1, 1.0),
+    // Fuel & Emission
+    fuel_level: randRange(10, 100),
+    fuel_pressure: randRange(200, 350),
+    o2_level: randRange(0.1, 0.9),
+    // Safety
+    lane_events: Math.random() < 0.2 ? Math.floor(randRange(0, 4)) : 0,
+    airbag_status: "OK",
+    // GPS
+    gps_lat: v.gps.lat,
+    gps_lon: v.gps.lon,
+    region: v.baseCity
+  };
+
+  return telem;
+}
+
+/* =========================================================
+   3. Server-Side Agents (Simulated in JS)
+   ========================================================= */
+function predictiveFailureAgent(t) {
+  const tempScore  = Math.max(0, (t.engine_temp - 90) / 40);
+  const brakeWearScore = Math.max(0, (80 - t.brake_pad_level) / 80);
+  const batteryScore = t.battery_voltage < 12 ? 0.6 : 0.0;
+  const tyreScore = Math.min(Math.abs(t.tire_pressure - 32) / 10, 1.0);
+  const vibScore   = Math.max(0, (t.vibration_level - 0.4) / 1.6);
+
+  let score = 0.35 * tempScore +
+              0.25 * brakeWearScore +
+              0.15 * batteryScore +
+              0.15 * tyreScore +
+              0.10 * vibScore;
+
+  score = Math.max(0, Math.min(1, score));
+  return Number(score.toFixed(2));
+}
+
+function riskAgent(t) {
+  let baseRul = 80000 - t.distance_travelled;
+  const tempPenalty  = Math.max(0, t.engine_temp - 95) * 240;
+  const brakePenalty = Math.max(0, 80 - t.brake_pad_level) * 600;
+  const vibPenalty   = Math.max(0, t.vibration_level - 0.5) * 9000;
+  const tyrePenalty  = Math.abs(t.tire_pressure - 32) * 300;
+  let rul = baseRul - tempPenalty - brakePenalty - vibPenalty - tyrePenalty;
+  rul = Math.max(1000, rul);
+  return Math.round(rul);
+}
+
+function notificationAgent(vehicle_id, failure_prob, rul, t, prevStatus) {
+  let status, msg;
+  if (failure_prob > 0.75 || rul < 15000) {
+    status = "CRITICAL";
+    msg = "High breakdown risk from engine/brake/tyre patterns. Immediate service recommended.";
+  } else if (failure_prob > 0.45 || rul < 30000) {
+    status = "WARNING";
+    msg = "Degradation detected from multi-sensor signals. Preventive service advised.";
+  } else {
+    status = "NORMAL";
+    msg = "Vehicle healthy based on current telemetry.";
+  }
+
+  if (status !== prevStatus && (status === "WARNING" || status === "CRITICAL")) {
+    const notifText =
+      `Agentic AI → ${vehicle_id}: ` +
+      (status === "CRITICAL"
+        ? `“We see a high risk of breakdown near ${t.region}. Shall we auto-book the nearest service slot?”`
+        : `“Early wear patterns detected. Would you like to schedule a preventive check near ${t.region}?”`);
+    notifications.unshift(notifText);
+    if (notifications.length > 6) notifications = notifications.slice(0, 6);
+  }
+
+  return { vehicle_id, status, message: msg };
+}
+
+function schedulingAgent(vehicleObj) {
+  const st = vehicleObj.status;
+  let slot, priority;
+  if (st === "CRITICAL") {
+    slot = "Tomorrow, 09:00 AM";
+    priority = "High-priority bay";
+  } else if (st === "WARNING") {
+    slot = "Within 3 days, 11:30 AM";
+    priority = "Normal service bay";
+  } else {
+    slot = "Next week, flexible timing";
+    priority = "Low-priority slot";
+  }
+  const centers = [
+    "OEM Service Hub – Chennai",
+    "OEM Quick Service – Tambaram",
+    "OEM Partner Workshop – OMR"
+  ];
+  const center = centers[Math.floor(Math.random() * centers.length)];
+  return { slot, priority, center };
+}
+
+function uebaAgent() {
+  if (Math.random() < 0.06) {
+    const events = [
+      "Blocked anomalous login attempt to the dashboard from an unknown IP.",
+      "Detected suspicious API call rate from one telematics device – throttled automatically.",
+      "Flagged unusual internal agent access pattern – escalated to security team.",
+      "Prevented unauthorized configuration change via policy engine.",
+      "Unusual data export attempt blocked by UEBA rules."
+    ];
+    const e = events[Math.floor(Math.random() * events.length)];
+    uebaEvents.unshift(e);
+    if (uebaEvents.length > 5) uebaEvents = uebaEvents.slice(0, 5);
+  }
+}
+
+/* =========================================================
+   4. Orchestrator (Master Agent)
+   ========================================================= */
+function masterAgentStep() {
+  vehicles.forEach(v => {
+    const prevStatus = v.latest ? v.latest.status : null;
+    const telem = simulateVehicleTelemetry(v);
+
+    const failure_probability = predictiveFailureAgent(telem);
+    const estimated_rul_km    = riskAgent(telem);
+    const alert = notificationAgent(v.id, failure_probability, estimated_rul_km, telem, prevStatus);
+
+    const combined = {
+      ...telem,
+      failure_probability,
+      estimated_rul_km,
+      status: alert.status,
+      recommendation: alert.message
+    };
+
+    v.latest = combined;
+
+    if (!history[v.id]) history[v.id] = [];
+    history[v.id].push(combined);
+    if (history[v.id].length > 50) history[v.id] = history[v.id].slice(-50);
+  });
+
+  uebaAgent();
+}
+
+/* =========================================================
+   5. UI Helpers & Rendering
+   ========================================================= */
+function randRange(a, b) {
+  return a + Math.random() * (b - a);
+}
+
+let selectedVehicleId = null;
+let tempChart = null;
+
+/* ---- PRIORITY SORT: CRITICAL > WARNING > NORMAL, THEN BY RISK ---- */
+function getStatusPriority(status) {
+  if (status === "CRITICAL") return 2;
+  if (status === "WARNING")  return 1;
+  return 0; // NORMAL or anything else
+}
+
+function renderVehiclesTable() {
+  const tbody = document.querySelector("#vehicles-table tbody");
+  tbody.innerHTML = "";
+
+  // create sorted copy based on service priority
+  const sorted = vehicles
+    .filter(v => v.latest)  // only those with data
+    .slice()
+    .sort((a, b) => {
+      const sa = getStatusPriority(a.latest.status);
+      const sb = getStatusPriority(b.latest.status);
+      if (sa !== sb) return sb - sa; // higher priority first
+
+      // if same band, higher risk first
+      if (a.latest.failure_probability !== b.latest.failure_probability) {
+        return b.latest.failure_probability - a.latest.failure_probability;
+      }
+
+      // if same risk, lower RUL first (needs earlier service)
+      return a.latest.estimated_rul_km - b.latest.estimated_rul_km;
+    });
+
+  sorted.forEach(v => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${v.id}</td>
+      <td><span class="badge ${v.latest.status}">${v.latest.status}</span></td>
+      <td>${v.latest.failure_probability}</td>
+      <td>${v.latest.estimated_rul_km}</td>
+      <td><button class="book" onclick="event.stopPropagation(); bookSlot('${v.id}')">Service</button></td>
+    `;
+    tr.onclick = () => selectVehicle(v.id);
+    tbody.appendChild(tr);
+  });
+}
+
+function selectVehicle(id) {
+  selectedVehicleId = id;
+  const v = vehicles.find(x => x.id === id);
+  if (!v || !v.latest) return;
+
+  document.getElementById("selected-pill").innerHTML =
+    `<span class="pill">Vehicle: ${id}</span>
+     <span class="pill">Status: ${v.latest.status}</span>
+     <span class="pill">Region: ${v.latest.region}</span>`;
+
+  const d = v.latest;
+  const detail = document.getElementById("vehicle-detail");
+  detail.innerHTML = `
+    <div class="kv-section-title">Location</div>
+    <div class="kv-row"><span class="kv-label">Region</span><span class="kv-value">${d.region}</span></div>
+    <div class="kv-row"><span class="kv-label">GPS Lat</span><span class="kv-value">${d.gps_lat.toFixed(5)}</span></div>
+    <div class="kv-row"><span class="kv-label">GPS Lon</span><span class="kv-value">${d.gps_lon.toFixed(5)}</span></div>
+
+    <div class="kv-section-title">Engine & Powertrain</div>
+    <div class="kv-row"><span class="kv-label">Engine Temp</span><span class="kv-value">${d.engine_temp.toFixed(1)} °C</span></div>
+    <div class="kv-row"><span class="kv-label">Coolant Temp</span><span class="kv-value">${d.coolant_temp.toFixed(1)} °C</span></div>
+    <div class="kv-row"><span class="kv-label">Vibration</span><span class="kv-value">${d.vibration_level.toFixed(3)} g</span></div>
+    <div class="kv-row"><span class="kv-label">Distance Travelled</span><span class="kv-value">${Math.round(d.distance_travelled)} km</span></div>
+
+    <div class="kv-section-title">Battery & Electrical</div>
+    <div class="kv-row"><span class="kv-label">Battery Voltage</span><span class="kv-value">${d.battery_voltage.toFixed(2)} V</span></div>
+    <div class="kv-row"><span class="kv-label">Battery Current</span><span class="kv-value">${d.battery_current.toFixed(1)} A</span></div>
+    <div class="kv-row"><span class="kv-label">State of Charge</span><span class="kv-value">${d.soc.toFixed(1)} %</span></div>
+
+    <div class="kv-section-title">Brake System</div>
+    <div class="kv-row"><span class="kv-label">Brake Pad Level</span><span class="kv-value">${d.brake_pad_level.toFixed(1)} %</span></div>
+    <div class="kv-row"><span class="kv-label">Brake Fluid Pressure</span><span class="kv-value">${d.brake_fluid_pressure.toFixed(1)} bar</span></div>
+    <div class="kv-row"><span class="kv-label">Brake Temperature</span><span class="kv-value">${d.brake_temp.toFixed(1)} °C</span></div>
+
+    <div class="kv-section-title">Tire & Wheel</div>
+    <div class="kv-row"><span class="kv-label">Avg Tire Pressure</span><span class="kv-value">${d.tire_pressure.toFixed(1)} PSI</span></div>
+    <div class="kv-row"><span class="kv-label">Avg Tire Temp</span><span class="kv-value">${d.tire_temp.toFixed(1)} °C</span></div>
+    <div class="kv-row"><span class="kv-label">Wheel Vibration</span><span class="kv-value">${d.wheel_vibration.toFixed(3)} g</span></div>
+
+    <div class="kv-section-title">Fuel & Emission</div>
+    <div class="kv-row"><span class="kv-label">Fuel Level</span><span class="kv-value">${d.fuel_level.toFixed(1)} %</span></div>
+    <div class="kv-row"><span class="kv-label">Fuel Pressure</span><span class="kv-value">${d.fuel_pressure.toFixed(1)} bar</span></div>
+    <div class="kv-row"><span class="kv-label">O₂ Sensor Level</span><span class="kv-value">${d.o2_level.toFixed(2)}</span></div>
+
+    <div class="kv-section-title">Safety Systems</div>
+    <div class="kv-row"><span class="kv-label">Lane Drift Events</span><span class="kv-value">${d.lane_events}</span></div>
+    <div class="kv-row"><span class="kv-label">Airbag Status</span><span class="kv-value">${d.airbag_status}</span></div>
+
+    <div class="kv-section-title">AI Summary</div>
+    <div class="kv-row"><span class="kv-label">Failure Probability</span><span class="kv-value">${d.failure_probability}</span></div>
+    <div class="kv-row"><span class="kv-label">Remaining Useful Life</span><span class="kv-value">${d.estimated_rul_km} km</span></div>
+    <div class="kv-row"><span class="kv-label">Status</span><span class="kv-value">${d.status}</span></div>
+    <div class="kv-row"><span class="kv-label">Recommendation</span><span class="kv-value">${d.recommendation}</span></div>
+  `;
+
+  const hist = history[id] || [];
+  const labels = hist.map((_, i) => i + 1);
+  const temps = hist.map(p => p.engine_temp);
+  drawTempChart(labels, temps);
+}
+
+function drawTempChart(labels, temps) {
+  const ctx = document.getElementById("tempChart").getContext("2d");
+  if (tempChart) tempChart.destroy();
+  tempChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Engine Temp (°C)',
+        data: temps,
+        borderColor: '#dc2626',
+        borderWidth: 2,
+        tension: 0.25,
+        fill: false
+      }]
+    },
+    options: {
+      plugins: { legend: { labels: { color: "#b91c1c" } } },
+      scales: {
+        x: { ticks: { color: "#6b6b7a" } },
+        y: { ticks: { color: "#6b6b7a" } }
+      }
+    }
+  });
+}
+
+function renderAlerts() {
+  const list = document.getElementById("alerts-list");
+  list.innerHTML = "";
+  let any = false;
+  vehicles.forEach(v => {
+    if (!v.latest) return;
+    if (v.latest.status === "CRITICAL" || v.latest.status === "WARNING") {
+      any = true;
+      const d = v.latest;
+      let cause = [];
+      if (d.engine_temp > 100) cause.push("high engine temp");
+      if (d.brake_pad_level < 50) cause.push("brake wear");
+      if (Math.abs(d.tire_pressure - 32) > 4) cause.push("abnormal tyre pressure");
+      if (d.vibration_level > 1.0) cause.push("powertrain vibration");
+      const causeText = cause.length ? "Possible cause(s): " + cause.join(", ") + "." : "";
+      const li = document.createElement("li");
+      li.textContent = `${v.id} (${d.region}) → ${v.latest.status} – ${v.latest.recommendation} ${causeText}`;
+      list.appendChild(li);
+    }
+  });
+  if (!any) list.innerHTML = "<li>No active alerts – all vehicles currently within safe operating band.</li>";
+}
+
+function renderInsights() {
+  let total = 0, critical = 0, warning = 0, normal = 0, fpSum = 0;
+  vehicles.forEach(v => {
+    if (!v.latest) return;
+    total++;
+    fpSum += v.latest.failure_probability;
+    if (v.latest.status === "CRITICAL") critical++;
+    else if (v.latest.status === "WARNING") warning++;
+    else if (v.latest.status === "NORMAL") normal++;
+  });
+
+  const avgFp = total ? (fpSum / total).toFixed(2) : "0.00";
+  document.getElementById("metric-total").textContent    = total;
+  document.getElementById("metric-critical").textContent = critical;
+  document.getElementById("metric-warning").textContent  = warning;
+  document.getElementById("metric-avg-fp").textContent   = avgFp;
+
+  const obj = {
+    total_vehicles: total,
+    critical_count: critical,
+    warning_count: warning,
+    normal_count: normal,
+    average_failure_probability: avgFp,
+    comment:
+      critical > 0
+        ? "RCA: A subset of vehicles is running under elevated thermal, brake and tyre stress in specific regions. CAPA: Prioritize cooling, brake material optimization and tyre SOPs for the affected build batches."
+        : "RCA: No major failure clusters observed in the current window. CAPA: Continue monitoring, refine agent thresholds and retrain predictive models with fresh telemetry."
+  };
+
+  document.getElementById("insights-box").textContent = JSON.stringify(obj, null, 2);
+}
+
+function renderSchedule() {
+  const listDiv = document.getElementById("schedule-list");
+  if (schedules.length === 0) {
+    listDiv.innerHTML = "";
+    return;
+  }
+  listDiv.innerHTML = "";
+  schedules.forEach(s => {
+    const div = document.createElement("div");
+    div.className = "schedule-item";
+    div.innerHTML = `
+      <b>${s.vehicle_id}</b><br/>
+      Region: ${s.region}<br/>
+      Slot: ${s.slot}<br/>
+      Center: ${s.center}<br/>
+      Lane: ${s.priority}<br/>
+      Reason: ${s.reason}
+    `;
+    listDiv.appendChild(div);
+  });
+}
+
+function renderNotifications() {
+  const ul = document.getElementById("notif-list");
+  ul.innerHTML = "";
+  if (notifications.length === 0) {
+    ul.innerHTML = "<li>No active AI notifications. Drivers are currently stable.</li>";
+    return;
+  }
+  notifications.forEach(n => {
+    const li = document.createElement("li");
+    li.textContent = n;
+    ul.appendChild(li);
+  });
+}
+
+function renderUEBA() {
+  const ul = document.getElementById("ueba-list");
+  ul.innerHTML = "";
+  if (uebaEvents.length === 0) {
+    ul.innerHTML = "<li>No anomalies detected. All agent and user activities are within normal policy bands.</li>";
+    return;
+  }
+  uebaEvents.forEach(e => {
+    const li = document.createElement("li");
+    li.textContent = e;
+    ul.appendChild(li);
+  });
+}
+
+function bookSlot(vehicleId) {
+  const v = vehicles.find(x => x.id === vehicleId);
+  if (!v || !v.latest) return;
+  const sched = schedulingAgent(v.latest);
+  const reason =
+    v.latest.status === "CRITICAL"
+      ? "High failure risk predicted from multi-sensor patterns; prioritized immediate slot."
+      : v.latest.status === "WARNING"
+        ? "Degradation detected in thermal/brake/tyre signals; preventive slot booked."
+        : "Routine health check scheduled based on usage profile.";
+
+  const entry = {
+    vehicle_id: vehicleId,
+    region: v.latest.region,
+    ...sched,
+    reason
+  };
+  schedules = schedules.filter(s => s.vehicle_id !== vehicleId);
+  schedules.push(entry);
+  document.getElementById("schedule-info").textContent =
+    "Slots are automatically allocated based on AI risk score, RUL, location and service center availability:";
+  renderSchedule();
+}
+
+/* =========================================================
+   6. Periodic Refresh
+   ========================================================= */
+function refreshAll() {
+  masterAgentStep();
+  renderVehiclesTable();
+  renderAlerts();
+  renderInsights();
+  renderNotifications();
+  renderUEBA();
+
+  if (!selectedVehicleId && vehicles[0]?.id) {
+    selectVehicle(vehicles[0].id);
+  } else if (selectedVehicleId) {
+    selectVehicle(selectedVehicleId);
+  }
+}
+
+refreshAll();
+setInterval(refreshAll, 4000);
+</script>
+</body>
+</html>
